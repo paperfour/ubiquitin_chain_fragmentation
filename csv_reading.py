@@ -5,6 +5,7 @@ import pandas as pd
 
 SINGLE_LOOKUP_COLUMN = []
 COMPOSITION_LOOKUP_COLUMN = []
+MASS_LOOKUP_COLUMN = []
 AMINO_ACID_DF = None
 
 def loadRefSheet():
@@ -34,6 +35,8 @@ def loadRefSheet():
     global COMPOSITION_LOOKUP_COLUMN
     COMPOSITION_LOOKUP_COLUMN = AMINO_ACID_DF.loc[:, "composition"].tolist()
 
+    global MASS_LOOKUP_COLUMN
+    MASS_LOOKUP_COLUMN = AMINO_ACID_DF.loc[:, "monoisotopic mass"].tolist()
 
     print("Imports finished!")
 

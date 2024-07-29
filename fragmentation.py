@@ -19,8 +19,8 @@ def genCZFragments(originalCollection, form = ""):
               "cleavedProtein": [],
               "ionType": [],
               "ionIndex": [],
-              "chemicalFormula" : [],
-              "mass" : []
+              "mass" : [],
+              "chemicalFormula" : []
               }
 
 
@@ -28,11 +28,14 @@ def genCZFragments(originalCollection, form = ""):
   # Iterate through every protein in the collection
   for index in range(0, len(originalCollection)):
 
+    # DON'T EDIT THIS OBJECT because it references the original collection that the copies are made of... don't mess with it
+    ORIGINAL_PROTEIN = originalCollection[index]
 
     # Iterate through each cleavage site in the protein
-    for n in range(1, originalCollection[index].sequenceLength()):
+    for n in range(1, ORIGINAL_PROTEIN.sequenceLength()):
 
       # Cleave the collection on target protein
+      #TODO: Abstract the cleavage type for more flexible usage
       tempCollection = cleave(originalCollection, originalCollection[index], n, IonType.C)
 
       # Save the masses of the pieces
@@ -45,22 +48,70 @@ def genCZFragments(originalCollection, form = ""):
         pFormula = proteinChemicalFormula(pParent)
         pMass = round(getMass(pFormula), 3)
 
-        # DON'T EDIT THIS OBJECT because it references the original collection that the copies are made of... don't mess with it
-        ORIGINAL_PROTEIN = originalCollection[index]
-
         dataDict["form"].append(form)
         dataDict["cleavedProtein"].append(getSequenceName(ORIGINAL_PROTEIN.sequence) + ": " + getProteinName(index))
         dataDict["ionIndex"].append(n if pIon.ionType in [IonType.A, IonType.B, IonType.C] else ORIGINAL_PROTEIN.sequenceLength() - n)
         dataDict["ionType"].append(str(pIon.ionType)[8:])
-        dataDict["chemicalFormula"].append(chemFormulaToString(pFormula))
         dataDict["mass"].append(pMass)
+        dataDict["chemicalFormula"].append(chemFormulaToString(pFormula))
 
   return dataDict
 
 
 
+# A copy of genCZFragments() but lmited for optimization
+def genCZFragmentsFast(originalCollection, form = ""):
+
+  ORIGINAL_MASS = getMass(proteinChemicalFormula(getBaseProtein(originalCollection[0])))
+
+  # Iterate through every combination of cleaved protein and cleaved site
+
+  dataDict = {"form" : [],
+              "cleavedProtein": [],
+              "ionType": [],
+              "ionIndex": [],
+              "mass" : []
+              }
+
+
+  # Iterate through every protein in the collection
+  for index in range(0, len(originalCollection)):
+
+    # DON'T EDIT THIS OBJECT because it references the original collection that the copies are made of... don't mess with it
+    ORIGINAL_PROTEIN = originalCollection[index]
+    
+    # Iterate through each cleavage site in the protein
+    for n in range(1, originalCollection[index].sequenceLength()):
+
+      # Cleave the collection on target protein
+      cIonCollection = cIonCleave(originalCollection, originalCollection[index], n)
+
+      cIonParent = getBaseProtein(cIonCollection[0])
+      cIonMass = getCFragmentMassFast(cIonParent)
+
+      # Calculate the C fragment
+      dataDict["form"].append(form)
+      dataDict["cleavedProtein"].append(getSequenceName(ORIGINAL_PROTEIN.sequence) + ": " + getProteinName(index))
+      dataDict["ionIndex"].append(n)
+      dataDict["ionType"].append("C")
+      dataDict["mass"].append(round(cIonMass, 3))
+
+      # Calculate the Z fragment
+      dataDict["form"].append(form)
+      dataDict["cleavedProtein"].append(getSequenceName(ORIGINAL_PROTEIN.sequence) + ": " + getProteinName(index))
+      dataDict["ionIndex"].append(ORIGINAL_PROTEIN.sequenceLength() - n)
+      dataDict["ionType"].append("Z")
+      dataDict["mass"].append(round(ORIGINAL_MASS - cIonMass, 3))
+
+
+  return dataDict
+
+
+
+
+
 # A sample usage of the genCZFragments
-def testCZFragmentation():
+def testCZFragmentation(name):
   # Get the formatted data
   text = "substrate, 41(Ub, 6(Ub), 48(Ub)), 113(Ub, 63(Ub, 6(Ub)))"
 
@@ -78,11 +129,11 @@ def testCZFragmentation():
   formCollection = getProteinCollection(target_form)
 
   # Generate fragments off of the proteins formed by the parsing
-  data = genCZFragments(formCollection)
+  data = genCZFragments(formCollection, form = text)
 
   # Pass to csv!
   df = pd.DataFrame(data)
-  df.to_csv('out.csv', index=False)
+  df.to_csv("output/" + name + ".csv", index=False)
 
 
 

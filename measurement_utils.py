@@ -1,5 +1,5 @@
 from iontype import IonType
-from csv_reading import SINGLE_LOOKUP_COLUMN, COMPOSITION_LOOKUP_COLUMN
+from csv_reading import SINGLE_LOOKUP_COLUMN, COMPOSITION_LOOKUP_COLUMN, MASS_LOOKUP_COLUMN
 from protein import Protein
 
 # Contains functions for retrieving the mass and chemical formula of a given protein
@@ -126,6 +126,41 @@ def getMass(formula: dict):
   sulfur = 32.065 * formula["S"]
 
   return carbon + hydrogen + nitrogen + oxygen + sulfur
+
+
+
+# Mass generation directly from a protein parent, optimized for CZ fragments
+def getCFragmentMassFast(protein: Protein):
+   
+   # Start with an H on the N terminus and a "stolen" NH on the cleaved edge
+  mass = 16.023
+
+  # Add the masses of each composite protein
+  for piece in ([protein] + list(protein.children.values())):
+      
+    for n in range(0, piece.sequenceLength()):
+
+      # TODO: ADD AN OH FOR THE CHILDREN!!!!
+      # TODO: RECURSE SO MUCH MORE
+
+      raise Exception("FIX ME!!!!!!")
+
+      try:
+        # Add the row number of each amino acid to the
+        mass += MASS_LOOKUP_COLUMN[SINGLE_LOOKUP_COLUMN.index(piece.sequence[n])]
+      except:
+          print("Unknown amino acid: " + protein.sequence[n])
+
+    #lose an H and OH for each isopeptide bond
+    mass -= 18.01528 * len(piece.children)
+  
+  return mass
+        
+   
+
+
+
+
 
 
 # used to print chemical formula in a readable manner

@@ -58,3 +58,43 @@ def cleave(referenceCollection, referenceCleavedProtein, cleavageSite: int, nTer
   proteinCollection.append(cFragment)
 
   return proteinCollection
+
+
+# Returns the C fragment as a collection when cleaved at a site
+def cIonCleave(referenceCollection, referenceCleavedProtein, cleavageSite: int):
+
+  proteinCollection = copyProteinCollection(referenceCollection)
+  cleavedProtein = proteinCollection[referenceCollection.index(referenceCleavedProtein)]
+
+  # Ensure that the protein is long enough to be cleaved at the requested site
+  if ((cleavageSite >= cleavedProtein.sequenceLength()) or (cleavageSite < 1)):
+    raise Exception("Cannot cleave at " + str(cleavageSite))
+
+  # Create the C fragment; this fragment will be parentless by nature but should still retain children left of the cleavage site
+  nFragment = Protein(cleavedProtein.sequence[:(cleavageSite)], ionType = IonType.C)
+
+  # Reassign the old protein's children to the correct ions
+  for attachmentSite in cleavedProtein.children.keys():
+
+    child = cleavedProtein.children[attachmentSite]
+
+    # If left of cleavage site
+    if (attachmentSite <= cleavageSite):
+      # Attach to N fragment
+      child.setParent(nFragment, attachmentSite)
+    # The rest must be right of cleavage site
+    else:
+      # Get rid of all C Terminus fragment proteins and their children
+      def rec(p):
+        for subChild in p.children.values():
+          rec(subChild)  
+        proteinCollection.remove(p)
+
+      rec(child)
+
+
+  # Replace the old protein with the cleaved one in the protein collection
+  proteinCollection.remove(cleavedProtein)
+  proteinCollection.append(nFragment)
+
+  return proteinCollection
