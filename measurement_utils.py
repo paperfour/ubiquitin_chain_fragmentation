@@ -132,18 +132,33 @@ def getMass(formula: dict):
 # Mass generation directly from a protein parent, optimized for CZ fragments
 def getCFragmentMassFast(protein: Protein):
    
-   # Start with an H on the N terminus and a "stolen" NH on the cleaved edge
-  mass = 16.023
+   # Start with a "stolen" NH on the cleaved edge (stolen from the Z fragment)
+  mass = 15.015
+
+  # A list of all proteins in the composite protein structure
+
+  l = []
+
+  def addProt(p: Protein, l : list):
+
+     l.append(p)
+
+     for child in p.children.values():
+        addProt(child, l)
+
+  addProt(protein, l)
+
+  # l now contains every protein whose mass should be considered
+
 
   # Add the masses of each composite protein
-  for piece in ([protein] + list(protein.children.values())):
+
+  for piece in (l):
       
     for n in range(0, piece.sequenceLength()):
 
-      # TODO: ADD AN OH FOR THE CHILDREN!!!!
-      # TODO: RECURSE SO MUCH MORE
-
-      raise Exception("FIX ME!!!!!!")
+      # Add an H on the N terminus
+      mass += 1.008
 
       try:
         # Add the row number of each amino acid to the

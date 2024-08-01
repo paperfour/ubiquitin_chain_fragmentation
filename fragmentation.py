@@ -86,7 +86,9 @@ def genCZFragmentsFast(originalCollection, form = ""):
       # Cleave the collection on target protein
       cIonCollection = cIonCleave(originalCollection, originalCollection[index], n)
 
-      cIonParent = getBaseProtein(cIonCollection[0])
+      cIonParent = getBaseProtein(cIonCollection[-1])
+
+  
       cIonMass = getCFragmentMassFast(cIonParent)
 
       # Calculate the C fragment
