@@ -119,10 +119,10 @@ def proteinChemicalFormula(protein: Protein):
 # Generate mass from chemical formula
 def getMass(formula: dict):
 
-  carbon = 12.011 * formula["C"]
-  hydrogen = 1.008 * formula["H"]
-  nitrogen = 14.007 * formula["N"]
-  oxygen =  15.999 * formula["O"]
+  carbon = 12.0107 * formula["C"]
+  hydrogen = 1.00794 * formula["H"]
+  nitrogen = 14.0067 * formula["N"]
+  oxygen =  15.9994 * formula["O"]
   sulfur = 32.065 * formula["S"]
 
   return carbon + hydrogen + nitrogen + oxygen + sulfur
@@ -132,8 +132,8 @@ def getMass(formula: dict):
 # Mass generation directly from a protein parent, optimized for CZ fragments
 def getCFragmentMassFast(protein: Protein):
    
-   # Start with a "stolen" NH on the cleaved edge (stolen from the Z fragment)
-  mass = 15.015
+   # Start with a "stolen" NH on the cleaved edge (broken off from the Z fragment)
+  mass = 14.0067 + 1.00794
 
   # A list of all proteins in the composite protein structure
 
@@ -146,6 +146,7 @@ def getCFragmentMassFast(protein: Protein):
      for child in p.children.values():
         addProt(child, l)
 
+  # Call the recursion
   addProt(protein, l)
 
   # l now contains every protein whose mass should be considered
@@ -155,25 +156,40 @@ def getCFragmentMassFast(protein: Protein):
 
   for piece in (l):
       
+    # Add an H on the N terminus... no OH added because the OH is lost from the isopeptide bond
+    mass += 1.00794
+
+    # For each amino acid...
     for n in range(0, piece.sequenceLength()):
 
-      # Add an H on the N terminus
-      mass += 1.008
-
       try:
-        # Add the row number of each amino acid to the
+        # Get the mass of the amino acid and add to the total
         mass += MASS_LOOKUP_COLUMN[SINGLE_LOOKUP_COLUMN.index(piece.sequence[n])]
       except:
-          print("Unknown amino acid: " + protein.sequence[n])
+        # Raise an error if theres an incorrect symbol  
+        print("Unknown amino acid: " + protein.sequence[n])
 
-    #lose an H and OH for each isopeptide bond
-    mass -= 18.01528 * len(piece.children)
+    # Lose an H for each isopeptide bond (dehydration synthesis reaction)... the OH loss is already accounted for
+    mass -= 1.00794 * len(piece.children)
   
   return mass
         
+# Gets the mass of a standalone protein without care of the children or ion
+def getStartMassFast(protein: Protein):
    
+   # Start with an H on the N terminus and OH on the C terminus of the substrate protein
+  mass = 15.9994 + 2 * (1.00794)
 
+  # Add the masses of each composite amino acid
+  for n in range(0, protein.sequenceLength()):
 
+      try:
+        # Add the row number of each amino acid to the
+        mass += MASS_LOOKUP_COLUMN[SINGLE_LOOKUP_COLUMN.index(protein.sequence[n])]
+      except:
+          print("Unknown amino acid: " + protein.sequence[n])
+          
+  return mass
 
 
 

@@ -14,51 +14,9 @@ from fragmentation import *
 from parsing import unparse
 import pandas as pd
 
-g = 0
 
-for i in range(0, 0):
-    
-  import time    
-
-  t = time.time()
-
-  testCZFragmentation("OLD_SLOW")
-
-  o = time.time() - t
-
-  print("Old method done in " + str(o) + " seconds")
-
-
-  t = time.time()
-
-  # Get the formatted data
-  text = "substrate, 41(Ub, 6(Ub), 48(Ub)), 113(Ub, 63(Ub, 6(Ub)))"
-
-  # Establish the substrate for the PTMs
-  substrate = Protein(GFP_SEQ)
-
-  # Parse the text into nested list data
-  # target_form = [substrate, [41, [ubiquitin1, [6, [ubiquitin2]], [48, [ubiquitin3]]]], [113, [ubiquitin4, [63, [ubiquitin5, [6, [ubiquitin6]]]]]]]
-  target_form = getNestedListFromString(text, substrate)
-
-
-  data = genCZFragmentsFast(getProteinCollection(target_form), form = text)
-
-  # Pass to csv!
-  df = pd.DataFrame(data)
-  df.to_csv("output/FAST_NEW_FINAL.csv", index=False)
-
-  n = time.time() - t
-
-  print("Old method done in " + str(n) + " seconds")
-
-
-  print(str(o/n) + "times faster!")
-  g += o/n
-
-  print("================================")
-
-print("Average: " + str(g/100) + " times faster!")
+#testCZFragmentationFast("NEW_FAST_FIXED")
+#testCZFragmentation("OLD_VER")
 
 print("================= Starting generation! =================")
 
@@ -77,6 +35,8 @@ structAmount = len(polyChains)
 
 print(str(structAmount) + " chain structures generated!")
 
+print(str(countUbiquitinatedForms(Protein(GFP_SEQ), u)))
+
 print("Beginning fragmentation...")
 
 
@@ -94,28 +54,39 @@ visual = ["|", "\\", "-", "/"]
 
 # ================================= OPTIMIZATION BEGIN
 
-import time    
+import time
 
 startTime = time.time()
+
+# Change in code to False for a 7% speed increase
+updateUser = True
 
 for collection in polyChains:
 
   progress += 1
 
+  if (updateUser):
 
-  percent = progress / structAmount
+    percent = progress / structAmount
 
-  timeLeft = (time.time() - startTime) * (1 - percent) / percent
+    timeLeft = (time.time() - startTime) * (1 - percent) / percent
 
-  print("Generating... %" + "%.2f" % round(percent * 100, 2) + " Estimated time: " + "%.2f" % round(timeLeft/60, 2) + " minutes remaining " + visual[progress % len(visual)], end="\r")
-
+    print("Generating... %" + "%.2f" % round(percent * 100, 2) + " Estimated time: " + "%.2f" % round(timeLeft/60, 2) + " minutes remaining " + visual[progress % len(visual)], end="\r")
 
   dict = genCZFragmentsFast(collection, form = unparse(collection))
 
+  
+# TODO: Write to csv on the fly instead
+  raise Exception("Fix me!")
   for key in dict.keys():
     data[key] += dict[key]
 
+
+
+
+
 print("")
+print("Fragmentation finished! In " + str((time.time() - startTime)) + " seconds")
 print("Converting to csv...")
 
 
@@ -133,3 +104,4 @@ dt_string = now.strftime("output/OPTIMIZED_%d_%m_%Y_%H_%M_%S_out.csv")
 df.to_csv(dt_string, index=False)
 
 print("Done! See " + dt_string + " for data")
+

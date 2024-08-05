@@ -138,6 +138,32 @@ def testCZFragmentation(name):
   df.to_csv("output/" + name + ".csv", index=False)
 
 
+def testCZFragmentationFast(name):
+
+  # Get the formatted data
+  text = "substrate, 41(Ub, 6(Ub), 48(Ub)), 113(Ub, 63(Ub, 6(Ub)))"
+
+  # Establish the substrate for the PTMs
+  substrate = Protein(GFP_SEQ)
+
+  # Parse the text into nested list data
+  # target_form = [substrate, [41, [ubiquitin1, [6, [ubiquitin2]], [48, [ubiquitin3]]]], [113, [ubiquitin4, [63, [ubiquitin5, [6, [ubiquitin6]]]]]]]
+  target_form = getNestedListFromString(text, substrate)
+
+  # !TODO! Edit the parsing and child creation to support other proteins
+
+
+  # Strip away the site attachment/parent/child info (already stored inside the protein object)
+  formCollection = getProteinCollection(target_form)
+
+  # Generate fragments off of the proteins formed by the parsing
+  data = genCZFragmentsFast(formCollection, form = text)
+
+  # Pass to csv!
+  df = pd.DataFrame(data)
+  df.to_csv("output/" + name + ".csv", index=False)
+
+
 
 # The following functions are used to find the CZ fragments of every possible chain arrangement for a ubiquitinated substrate
 
@@ -197,5 +223,24 @@ def genUbiquitinatedForms(substrate, ubiquitinCount):
           out.append(lvN1List)
 
   rec(lv0List)
+
+  return out
+
+
+# Returns the amount of forms possible
+def countUbiquitinatedForms(substrate, ubiquitinCount):
+
+  # This is the returned value
+  out = 1
+
+  totalSites = len(ubSites(substrate))
+
+  for i in range(0, ubiquitinCount):
+    
+    out *= totalSites
+
+    # One site is occupied by the protein and eight sites are found on the new protein
+    # 8 - 1 = 7
+    totalSites += 7
 
   return out
