@@ -1,15 +1,57 @@
-def getMass(formula: dict):
+from fragmentation import *
+from parsing import *
+import time
+import tracemalloc
 
-  carbon = 12.0107 * formula["C"]
-  hydrogen = 1.00794 * formula["H"]
-  nitrogen = 14.0067 * formula["N"]
-  oxygen =  15.9994 * formula["O"]
-  sulfur = 32.065 * formula["S"]
-
-  return carbon + hydrogen + nitrogen + oxygen + sulfur
+s = "substrate, 41(Ub,6(Ub),48(Ub)), 113(Ub,63(Ub,6(Ub)))"
+#print(s)
 
 
-t = { "C": 6, "H": 12, "N": 4, "O": 1, "S": 0}
+#c = simpleParse(s, SimpleProtein(simpleUbSites(GFP_SEQ)))
+#print(simpleUnparse(c))
+
+t = time.time()
+for i in range(0, 763000):
+    c = getNestedListFromString(s, Protein(GFP_SEQ))
+t1 = time.time()
+print("In " + str(t1 - t))
+
+print(unparse(getProteinCollection(c)))
 
 
-print(getMass(t))
+
+print("=================")
+
+raise Exception(":)")
+
+x = []
+
+t = time.time()
+
+tracemalloc.start()
+
+
+for i in range(0, 10000):
+    c = simpleParse(s, SimpleProtein(simpleUbSites(GFP_SEQ)))
+    x.append(simpleUnparse(c))
+
+r = tracemalloc.get_traced_memory()
+t1 = time.time()
+
+print("In " + str(t1 - t) + " using " + str(r))
+print("=================")
+
+x = []
+
+t = time.time()
+
+tracemalloc.reset_peak()
+
+for i in range(0, 10000):
+    c = getNestedListFromString(s, Protein(GFP_SEQ))
+    x.append(unparse(getProteinCollection(c)))
+
+r = tracemalloc.get_traced_memory()
+t1 = time.time()
+
+print("In " + str(t1 - t) + " using " + str(r))

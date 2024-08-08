@@ -5,7 +5,7 @@ from iontype import IonType
 class Protein:
 
 
-  def __init__(self, singleLetterSequence, parent = None, site = -1, ionType = IonType.NONE, updateParent = True):
+  def __init__(self, singleLetterSequence, parent = None, site = -1, ionType = IonType.NONE):
 
     # Key-value pairs are [attachment_site : protein_child]
     self.children = {}
@@ -32,7 +32,7 @@ class Protein:
       if (site == -1):
         raise Exception("Cannot specify parent without an attachment amino acid!")
       elif(site > proteinParent.sequenceLength()):
-        raise Exception("Amino acid doesn't exist!")
+        raise Exception("Amino acid cannot be bound to because the protein isn't long enough!")
       else:
         # Assign itself as the parent's child
         proteinParent.children[site] = self
@@ -46,6 +46,22 @@ class Protein:
   # Returns the number of amino acids in the peptide (not counting parent/children)
   def sequenceLength(self):
     return len(self.sequence)
+
+
+# A simplified protein class with no defined sequence... based on the assumption that only Ubiquitin exists as a PTM
+class SimpleProtein:
+
+  def __init__(self, attachmentSites, parent = None, parentSite = -1):
+    
+      self.attachmentSites = attachmentSites
+      self.parent = parent
+      self.parentSite = parentSite
+
+# Returns a simple ubiquitin
+def simpleUbiquitin(parent = None, parentSite = -1):
+
+  return SimpleProtein([6, 11, 27, 29, 33, 48, 63, 76], parent=parent, parentSite=parentSite)
+
 
 # ============================= Utils for protein identification =================================
 
