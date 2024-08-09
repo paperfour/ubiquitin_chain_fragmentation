@@ -196,8 +196,9 @@ def simpleUbSites(proteinSequence):
   out = []
 
   # Append all lysines except the last one (it will always be added)
-  for a in range(0, len(proteinSequence) - 1):
+  for a in range(1, len(proteinSequence)):
 
+    # Subtract one because the first site should correspond to the number 1 instead of the string index 0
     if proteinSequence[a-1] == "K":
       out.append(a)
 
@@ -207,6 +208,7 @@ def simpleUbSites(proteinSequence):
   return out
 
 # Returns a list of lists, the sub-lists each containing proteins linked to eachother in a unique way so that all chain forms are taken into account
+# This is great, but is problematic because it creates duplucates
 # ======================    IMPORTANT FUNCTION #2    ================================
 def genUbiquitinatedForms(substrate, ubiquitinCount):
 
@@ -226,6 +228,7 @@ def genUbiquitinatedForms(substrate, ubiquitinCount):
       for lvNSite in ubSites(lvNProtein):
 
         # There is a variation!
+        # AS LONG AS the SHAPE is not already present in N1
 
         # Create a copy of the list - each one will be given a unique branching structure
         lvN1List = copyProteinCollection(substList)
@@ -250,6 +253,7 @@ import pandas as pd
 import os
 
 # Returns a file path to a list of parsable forms
+# TODO: Instead of recursing on UBIQUITIN COUNT recurse on MAX CHAIN DEPTH
 def genUbiquitinatedFile(substrateSequence, ubiquitinCount):
 
   # This is the unique date and time code that will be used to identify the temp files
@@ -267,8 +271,6 @@ def genUbiquitinatedFile(substrateSequence, ubiquitinCount):
     tempNFileName = "temp/LV" + str(n) + "_"  + dtCode + "_temp.csv"
     tempNdf.to_csv(tempNFileName, index=False, header=False)
   
-  sites = simpleUbSites(substrateSequence)
-
   # Add the ubiquitins
 
   # For every level...
@@ -280,51 +282,79 @@ def genUbiquitinatedFile(substrateSequence, ubiquitinCount):
     nFileName = "temp/LV" + str(n) + "_"  + dtCode + "_temp.csv"
 
     # Open and chunk the n-1 (previous level) file
-    # TODO: Make chunk size dependent on the amount of ubiquitinatable sites
-    prevLevelChunks = pd.read_csv(prevFileName, chunksize=10000) 
+    # TODO: Make chunk size dependent on the amount of ubiquitinatable sites (bigger chunks at the beginning)
+    prevLevelChunks = pd.read_csv(prevFileName, chunksize=50000) 
 
     # For each chunk in the previous level...
     for chunk in prevLevelChunks:
 
-      print("Chunking level " + str(n))
+      print("Chunking level " + str(n - 1) + " to make level " + str(n))
       
       # Read the chunk into a dataframe
-      df = pd.DataFrame(chunk)
+      chunk_df = pd.DataFrame(chunk)
       
       # Establish a value to be saved at the end of the chunk reading
-      n1SavedChunk = []
+      nSavedChunk = []
       
+      print("Reading lines in chunk")
       # For each line...
-      for line in df["form"]:
+      for line in chunk_df["form"]:
 
-        n1SavedChunk.append("x")
-        n1SavedChunk.append("x")
+        # Create a ubiquitin that will try every avaiable site
+        newProtein = simpleUbiquitin()
 
-        # Parse line
+        # Initialize the full protein collection complete with the new ubiquitin
+        substrate = SimpleProtein(simpleUbSites(substrateSequence))
+        fullProtein = simpleParse(line, substrate)
 
-        # Add the n level ubiquitin
-          # dictionary of     {simple protein: [open site, open site ...], ....}
+        # To add the n level ubiquitin:
           # for each protein..
           #   for each open site
           #     vary!
 
-        # Unparse to text
-        
-        # Write to n level file
+    
+        # Add the new protein
+        fullProtein.append(newProtein)
+     
+        # Vary the new protein for each open site
 
-      n1df = pd.DataFrame(n1SavedChunk)
-      
-      n1df.to_csv(nFileName, mode="a", index=False, header=False)
+        # For each protein in the collection that isn't the new protein...
+        for compositeProtein in filter(lambda x: x != newProtein, fullProtein):
+
+          # Assign temporarily the new protein as each composite's child (this is ok even if there are no open sites because the saving is done inside the iteration over open sites)
+          newProtein.parent = compositeProtein
+
+          # For each open site...
+          for site in compositeProtein.attachmentSites:
+            
+            # Temporarily set the site to said open site
+            newProtein.parentSite = site
+        
+            # Unparse to text
+            text = simpleUnparse(fullProtein)
+
+            # Write to n level list saving the setup into the list as a string
+            nSavedChunk.append(text)
+
+
+ 
+      # Save the numerous variations of the chunk to the csv after every chunk
+      n_df = pd.DataFrame(nSavedChunk)
+      n_df.to_csv(nFileName, mode="a", index=False, header=False)
 
     # Delete previous temp file
     print("Deleting level " + str(n - 1))
-    os.remove(prevFileName)
+    #os.remove(prevFileName)
     
 
 
   return "temp/LV" + str(ubiquitinCount) + "_" + dtCode + "_temp.csv"
 
-genUbiquitinatedFile("AAKAAKAA", 6)
+
+n = 2
+
+
+#genUbiquitinatedFile(GFP_SEQ, n)
 
 
 # Returns the amount of forms possible
@@ -346,5 +376,6 @@ def countUbiquitinatedForms(substrate, ubiquitinCount):
     totalSites += 7
 
   return out
-
-
+import pprint
+pprint.pprint([unparse(getProteinCollection(i)) for i in genUbiquitinatedForms(Protein(GFP_SEQ), n)])
+print(countUbiquitinatedForms(Protein(GFP_SEQ), n), " lines in the final form!")

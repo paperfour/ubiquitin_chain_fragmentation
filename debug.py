@@ -7,14 +7,13 @@ s = "substrate, 41(Ub,6(Ub),48(Ub)), 113(Ub,63(Ub,6(Ub)))"
 #print(s)
 
 
-#c = simpleParse(s, SimpleProtein(simpleUbSites(GFP_SEQ)))
-#print(simpleUnparse(c))
+simpleobjects = simpleParse(s, SimpleProtein(simpleUbSites(GFP_SEQ)))
 
-t = time.time()
-for i in range(0, 763000):
-    c = getNestedListFromString(s, Protein(GFP_SEQ))
-t1 = time.time()
-print("In " + str(t1 - t))
+simpletext = simpleUnparse(simpleobjects)
+
+print(simpletext)
+
+c = getNestedListFromString(simpletext, Protein(GFP_SEQ))
 
 print(unparse(getProteinCollection(c)))
 

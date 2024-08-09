@@ -95,29 +95,37 @@ def simpleParse(text, substrate):
   # Create child proteins for X in "X, n(Y), n(Z)..." from the nested lists using recursion
   # parentLevel is a nested list that begins "[X, ..."
   # Updates the parentLevel list with protein objects replacing the strings
-  def createSimpleChildProteins(parentLevel, substrate):
-
-      if substrate != None:
-        parentLevel[0] = substrate
-
+  def createSimpleChildProteins(parentLevel):
+      
       for childInfo in parentLevel[1:]:
 
+        # We are... "HERE, n(Y), n(Z)..."
+
         # Hardcoded UBIQUITIN_SEQ can be replaced by reading childInfo[1][0] and finding the right protein
-        newProtein = simpleUbiquitin(parent=parentLevel[0], parentSite=childInfo[0])
+        childProtein = simpleUbiquitin(parent=parentLevel[0], parentSite=childInfo[0])
+
+        # Now that the child is paired to the parent, its site becomes off-limits
+        try:
+          parentLevel[0].attachmentSites.remove(childInfo[0])
+        except:
+          raise Exception("Problem with removing " + str(childInfo[0]) + " from " + str(parentLevel[0]) + " ! This is probably due to passing a substrate object not usable in the text's format")
 
         # Updates the nested list representation to include the unique protein model
-        childInfo[1][0] = newProtein
-        collection.append(newProtein)
+        childInfo[1][0] = childProtein
+        collection.append(childProtein)
 
-        # Can input None because the 'substrate' was just set to the newProtein and does not need to be set
-        createSimpleChildProteins(childInfo[1], None)
+        # Now we are... "X, n(HERE), n(Z)..."
+        createSimpleChildProteins(childInfo[1])
 
 
   # The right structure, but with strings instead of protein objects
   nestedList = parse(text)
 
-  # Injects the SIMPLE protein objects into the structure
-  createSimpleChildProteins(nestedList, substrate)
+  # Give the substrate as a starting point
+  nestedList[0] = substrate
+
+  # Injects the SIMPLE protein objects into the structure assuming that nestedList[0] = substrate
+  createSimpleChildProteins(nestedList)
 
   # Return
   return collection
@@ -168,7 +176,7 @@ def unparse(enclosingCollection):
 # Returns a text version of a given collection
 # The list argument should contain only proteins
 simpleOutput = ""
-def simpleUnparse(enclosingCollection):
+def simpleUnparse(enclosingCollection, names = False):
 
 
   global simpleOutput
@@ -181,7 +189,7 @@ def simpleUnparse(enclosingCollection):
 
     #try:
 
-    string = str(simpleProtein.parentSite) + "(x,"
+    string = str(simpleProtein.parentSite) + "(" + (getProteinName(enclosingCollection.index(simpleProtein)) if names else "x") + ","
 
     global simpleOutput
     simpleOutput += string
