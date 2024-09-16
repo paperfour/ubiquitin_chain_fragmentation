@@ -3,7 +3,7 @@ from names import getProteinName
 
 
 # Parses the creation of nested proteins
-# Returns the text parsed into nested lists
+# Returns the text parsed into nested lists of more text
 # Text must be in the following form: " substrate, site#( ---- ),  site#( ---- ), ...  " where ---- can be replaced with a similar structure
 def parse(string):
 
@@ -55,6 +55,8 @@ def parse(string):
 
 
 # Parses and prepares a nested list from given text
+# Returns proteins!
+# This is the function that should be used for turning text into fragmentable things
 def getNestedListFromString(text, substrate):
 
   # Create child proteins for X in "X, n(Y), n(Z)..." from the nested lists using recursion
@@ -144,7 +146,7 @@ def unparse(enclosingCollection):
 
   def rec(protein):
 
-    #try:
+    #try:    
 
     string = str(protein.parentAttachmentSite) + ("(") + getSequenceName(protein.sequence)  + ": " + getProteinName(enclosingCollection.index(protein)) + ", "
 

@@ -82,6 +82,7 @@ def getSequenceName(sequence):
 
 
 # Returns a flat list of every protein in a nested list... makes it easier to iterate
+# Also works with simple proteins
 def getProteinCollection(nestedList, final = True):
 
   proteinCollection = []
@@ -90,7 +91,7 @@ def getProteinCollection(nestedList, final = True):
 
     if isinstance(entry, list):
       proteinCollection += getProteinCollection(entry)
-    elif isinstance(entry, Protein):
+    elif isinstance(entry, Protein) or isinstance(entry, SimpleProtein):
       proteinCollection.append(entry)
 
 
@@ -120,6 +121,34 @@ def copyProteinCollection(proteinCollection):
       out[i].setParent(out[counterpartParentIndex], counterpart.parentAttachmentSite)
 
   return out
+
+
+# Returns identical simple proteins but different objects... the copy() method isn't shallow enough because the parent and child pointers are still to the uncopied objects
+def copySimpleProteinCollection(proteinCollection):
+
+  out = []
+
+  for p in proteinCollection:
+
+    # Make copies of each protein, but with no
+    out.append(SimpleProtein(p.attachmentSites, parent = None, parentSite = p.parentSite))
+
+  for i in range(0, len(out)):
+
+    # Finds where the corresponding parent is and assigns the recently created version of it to each protein
+
+    counterpart = proteinCollection[i]
+
+    # If it has a parent
+    if counterpart.parentSite != -1:
+      
+      # Set the parent to the corresponding copy
+      counterpartParentIndex = proteinCollection.index(counterpart.parent)
+
+      out[i].parent = out[counterpartParentIndex]
+
+  return out
+
 
 
 # Returns the parent of the parent of... a given protein

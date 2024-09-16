@@ -26,7 +26,7 @@ while True:
     break
   except:
     print("That is not a number!")
-
+2
 print("Substrate: GFP")
 print("Generating varied forms...")
 polyChains = genUbiquitinatedForms(Protein(GFP_SEQ), u)
@@ -36,7 +36,7 @@ structAmount = len(polyChains)
 
 print(str(structAmount) + " chain structures generated!")
 
-print(str(countUbiquitinatedForms(Protein(GFP_SEQ), u)))
+print(str(countUbiquitinatedFormsDupe(Protein(GFP_SEQ), u)))
 
 print("Beginning fragmentation...")
 

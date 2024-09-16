@@ -10,25 +10,15 @@ AMINO_ACID_DF = None
 
 def loadRefSheet():
 
-    print("Importing...")
- 
-    print("Loading reference URL")
-
-    # Combined data from https://proteomicsresource.washington.edu/protocols06/masses.php and https://raw.githubusercontent.com/specht/proteomics-knowledge-base/master/amino-acids.csv
-    url = "https://raw.githubusercontent.com/paperfour/ubiquitin_chain_fragmentation/master/amino_acid_lookup.csv?token=GHSAT0AAAAAACVLGHD2MGWPHCZ6XKIYNYRMZVTQCHQ"
-
-    print("Getting the csv...")
-    from os.path import exists
-
     global AMINO_ACID_DF
 
-
-
     try:
-        print("Reading amino acid names from local...")
+        print("Reading local csv...")
         AMINO_ACID_DF = pd.read_csv("amino_acid_lookup_info.csv")
     except:
         raise Exception("No local lookup found!")
+        # URL should be combined data from https://.washington.edu/protocols06/masses.php and https://raw.githubusercontent.com/specht/proteomics-knowledge-base/master/amino-acids.csv
+        url = ""
         AMINO_ACID_DF = pd.read_csv(url)
         AMINO_ACID_DF.to_csv("amino_acid_lookup.csv", index = False)
         print("File downloaded and ready for reference")

@@ -6,6 +6,7 @@ from cleaving import *
 from parsing import *
 
 import pandas as pd
+import more_itertools as mi
 
 
 # Returns a dictionary csv form reference of all the possible CZ-ion cleavages in a system of proteins
@@ -208,7 +209,7 @@ def simpleUbSites(proteinSequence):
   return out
 
 # Returns a list of lists, the sub-lists each containing proteins linked to eachother in a unique way so that all chain forms are taken into account
-# This is great, but is problematic because it creates duplucates
+# This is great, but is problematic because it creates duplucates when working with JUST ubiquitin
 # ======================    IMPORTANT FUNCTION #2    ================================
 def genUbiquitinatedForms(substrate, ubiquitinCount):
 
@@ -248,24 +249,90 @@ def genUbiquitinatedForms(substrate, ubiquitinCount):
 
   return out
 
+
+
+# Same as genUbiquitinatedForms but should remove the duplicates
+def genUbiquitinatedFormsNoDupe(substrateSequence, ubiquitinCount):
+
+  # This is the returned list of strings
+  out = []
+
+  # Level 0 contains only the substrate
+  startList = [SimpleProtein(simpleUbSites(substrateSequence))]
+
+  # A single recursive loop... should find all possible combinations of adding ubiquitins 
+  def rec(freshList, wholeList, outputList, ubiquitinGoal):
+
+    # Combined list of tuples containing the open sites from each most recently placed protein (no need to worry about children because they are fresh and have none) 
+    openSites = []
+
+    for protein in freshList:
+      for site in protein.attachmentSites:
+        openSites.append((protein, site))
+      
+
+    # Vary the form for every possible amount of new ubiquitins
+    # newUbiquitinCount is an integer that represents how many ubiquitins that will be added to the layer in one go
+    # For instance, newUbiquitinCount = 1 will try one ubiquitin at all fresh sites
+    # newUbiquitinCount = 2 will shuffle around 2 ubiquitins to make evry combination possible with the fresh sites
+    for newUbiquitinCount in range(1, len(openSites) + 1):
+
+      # Count the preexisting ubiquitins and subtract 1 so that the substrate isn't counted
+      establishedUbiquitinCount = len(wholeList) - 1
+      
+      # Generate all combinations for adding newUbiquitins amount of ubiquitins to the fresh sites
+      combos = list(mi.distinct_combinations(openSites, newUbiquitinCount))
+
+      # For each of these forms...
+      for combo in combos:
+
+        # Copy the previous list
+        builtList = copySimpleProteinCollection(wholeList)
+
+        # Make each combo into proteins with the correct parents
+        newList = [simpleUbiquitin(parent=builtList[wholeList.index(protAndSite[0])], parentSite=protAndSite[1]) for protAndSite in combo]
+
+        # Recurse if there are more ubiquitins that need to be added
+        if (establishedUbiquitinCount + newUbiquitinCount < ubiquitinGoal):
+          # Giving it...
+          #  - The proteins that were just added
+          #  - The whole protein set. Combined the copied proteins and newborn ubiquitins to make a full set
+          #  - Where to put the output      
+          #  - The maximum ubiquitins allowed
+          rec(newList, builtList + newList, outputList, ubiquitinGoal)
+
+        # If no more ubiquitins need to be added, this form is ready to be returned!
+        else:
+          outputList.append(simpleUnparse(builtList + newList, names=False))
+          #outputList.append(builtList + newList)
+
+      # Stop iterating / adding more ubiquitins if there amount just added was enough to fit the goal
+      if establishedUbiquitinCount + newUbiquitinCount >= ubiquitinGoal:
+        break
+
+  rec(startList, startList, out, ubiquitinCount)  
+
+  return out
+
+
 from datetime import datetime
-import pandas as pd
-import os
 
 # Returns a file path to a list of parsable forms
-# TODO: Instead of recursing on UBIQUITIN COUNT recurse on MAX CHAIN DEPTH
+# Instead of iterating on UBIQUITIN COUNT this iterates on MAX CHAIN DEPTH
+# Lowkey this isnt even needed because the non-dupe data cna be stored in RAM very comfortably
 def genUbiquitinatedFile(substrateSequence, ubiquitinCount):
+
+  # The max chain depth is the ubiquitin amount because they could in some cases all be stacked together
 
   # This is the unique date and time code that will be used to identify the temp files
   dtCode = datetime.now().strftime("%d_%m_%Y_%H_%M_%S")
 
-
-  # Initiate the first level of recursion (only one form possibility for just the substrate)
+  # Initiate the chain depth of 0 (only one form possibility for just the substrate)
   temp0df = pd.DataFrame(["form", "substrate"])
   temp0FileName = "temp/LV0_" + dtCode + "_temp.csv"
   temp0df.to_csv(temp0FileName, index=False, header=False)
 
-  # Create the empty base temp files for all further levels of recursion
+  # Create the empty base temp files for all max chain depths
   for n in range(1, ubiquitinCount + 1):
     tempNdf = pd.DataFrame(["form"])
     tempNFileName = "temp/LV" + str(n) + "_"  + dtCode + "_temp.csv"
@@ -273,17 +340,17 @@ def genUbiquitinatedFile(substrateSequence, ubiquitinCount):
   
   # Add the ubiquitins
 
-  # For every level...
+  # For every chain depth...
   for n in range(1, ubiquitinCount + 1):
     
-    print("Building level ", n)
+    print("Building chains with max depth of ", n)
 
-    prevFileName = "temp/LV" + str(n - 1) + "_"  + dtCode + "_temp.csv"
-    nFileName = "temp/LV" + str(n) + "_"  + dtCode + "_temp.csv"
+    readFileName = "temp/LV" + str(n - 1) + "_"  + dtCode + "_temp.csv"
+    writeFileName = "temp/LV" + str(n) + "_"  + dtCode + "_temp.csv"
 
     # Open and chunk the n-1 (previous level) file
     # TODO: Make chunk size dependent on the amount of ubiquitinatable sites (bigger chunks at the beginning)
-    prevLevelChunks = pd.read_csv(prevFileName, chunksize=50000) 
+    prevLevelChunks = pd.read_csv(readFileName, chunksize=50000) 
 
     # For each chunk in the previous level...
     for chunk in prevLevelChunks:
@@ -299,6 +366,9 @@ def genUbiquitinatedFile(substrateSequence, ubiquitinCount):
       print("Reading lines in chunk")
       # For each line...
       for line in chunk_df["form"]:
+
+        # For every open site on only the prev level...
+          # For every 
 
         # Create a ubiquitin that will try every avaiable site
         newProtein = simpleUbiquitin()
@@ -340,7 +410,7 @@ def genUbiquitinatedFile(substrateSequence, ubiquitinCount):
  
       # Save the numerous variations of the chunk to the csv after every chunk
       n_df = pd.DataFrame(nSavedChunk)
-      n_df.to_csv(nFileName, mode="a", index=False, header=False)
+      n_df.to_csv(writeFileName, mode="a", index=False, header=False)
 
     # Delete previous temp file
     print("Deleting level " + str(n - 1))
@@ -351,14 +421,8 @@ def genUbiquitinatedFile(substrateSequence, ubiquitinCount):
   return "temp/LV" + str(ubiquitinCount) + "_" + dtCode + "_temp.csv"
 
 
-n = 2
-
-
-#genUbiquitinatedFile(GFP_SEQ, n)
-
-
-# Returns the amount of forms possible
-def countUbiquitinatedForms(substrate, ubiquitinCount):
+# Returns the amount of (duplicate inclusive) forms possible
+def countUbiquitinatedFormsDupe(substrate, ubiquitinCount):
 
   # This is the returned value
   # With the amount of 
@@ -376,6 +440,3 @@ def countUbiquitinatedForms(substrate, ubiquitinCount):
     totalSites += 7
 
   return out
-import pprint
-pprint.pprint([unparse(getProteinCollection(i)) for i in genUbiquitinatedForms(Protein(GFP_SEQ), n)])
-print(countUbiquitinatedForms(Protein(GFP_SEQ), n), " lines in the final form!")

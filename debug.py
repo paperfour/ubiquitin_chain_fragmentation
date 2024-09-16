@@ -1,7 +1,18 @@
-from fragmentation import *
+#from fragmentation import *
 from parsing import *
 import time
 import tracemalloc
+import more_itertools as mi
+
+p = ["bob", "john", "2", "3"]
+
+
+print(set(mi.distinct_combinations(p, 4)))
+
+
+
+
+raise Exception(":)")
 
 s = "substrate, 41(Ub,6(Ub),48(Ub)), 113(Ub,63(Ub,6(Ub)))"
 #print(s)

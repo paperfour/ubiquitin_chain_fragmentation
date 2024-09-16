@@ -1,7 +1,14 @@
+# !!!!!!!!!! Not updated anymore !!!!!!!!!!! use fast_gen_no_dupe.py
+# 
+# 
+# 
+# 
 # Experiments to speed up generation time
 
 # Uses the reference csv at https://github.com/specht/proteomics-knowledge-base/blob/master/amino-acids.csv for amino acid information
 # Uses pandas for csv manipulation and reading
+
+raise Exception("This is not the script you are looking for")
 
 print("Program started")
 
